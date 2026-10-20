@@ -912,6 +912,164 @@ $('recordSearch').addEventListener('input', render);
 $('recordType').addEventListener('change', render);
 $('dateFrom').addEventListener('change', render);
 $('dateTo').addEventListener('change', render);
+
+  
+/* TinyLedger backup and restore */
+
+function downloadBackup() {
+  const backup = {
+    app: 'TinyLedger',
+    version: 1,
+    createdAt: new Date().toISOString(),
+    records: data
+  };
+
+  try {
+    const blob = new Blob(
+      [JSON.stringify(backup, null, 2)],
+      { type: 'application/json' }
+    );
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+
+    const date = new Date().toISOString().slice(0, 10);
+
+    link.href = url;
+    link.download = 'tinyledger-backup-' + date + '.json';
+
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+    $('backupStatus').textContent =
+      'Backup prepared on ' + new Date().toLocaleString() +
+      '. Check your Downloads folder to confirm it was saved.';
+  } catch (error) {
+    $('backupStatus').textContent =
+      'Backup failed. Please try again or export your CSV records.';
+  }
+}
+
+function restoreBackup(event) {
+  const file = event.target.files && event.target.files[0];
+
+  if (!file) return;
+
+  if (file.size > 10 * 1024 * 1024) {
+    $('backupStatus').textContent =
+      'This backup is larger than 10 MB and cannot be imported.';
+    event.target.value = '';
+    return;
+  }
+
+  const reader = new FileReader();
+
+  reader.onload = function () {
+    try {
+      const backup = JSON.parse(reader.result);
+
+      if (
+        !backup ||
+        backup.app !== 'TinyLedger' ||
+        backup.version !== 1 ||
+        !Array.isArray(backup.records)
+      ) {
+        throw new Error('This is not a supported TinyLedger backup.');
+      }
+
+      if (backup.records.length > 50000) {
+        throw new Error('The backup contains too many records.');
+      }
+
+      const validTypes = ['sale', 'expense', 'debt'];
+
+      const restored = backup.records.map(record => {
+        if (!record || typeof record !== 'object') {
+          throw new Error('A record in the backup is invalid.');
+        }
+
+        if (!validTypes.includes(record.type)) {
+          throw new Error('A record has an unsupported type.');
+        }
+
+        if (
+          typeof record.date !== 'string' ||
+          !/^\d{4}-\d{2}-\d{2}$/.test(record.date) ||
+          !Number.isFinite(Date.parse(record.date + 'T00:00:00Z'))
+        ) {
+          throw new Error('A record has an invalid date.');
+        }
+
+        if (
+          typeof record.amount !== 'number' ||
+          !Number.isFinite(record.amount) ||
+          record.amount <= 0
+        ) {
+          throw new Error('A record has an invalid amount.');
+        }
+
+        if (
+          typeof record.note !== 'string' ||
+          typeof (record.person ?? '') !== 'string'
+        ) {
+          throw new Error('A record contains invalid text.');
+        }
+
+        return {
+          id: record.id ?? Date.now() + Math.random(),
+          type: record.type,
+          date: record.date,
+          amount: record.amount,
+          person: record.person || '',
+          note: record.note,
+          paid: record.type === 'debt' && record.paid === true
+        };
+      });
+
+      if (!confirm(
+        'Restore ' + restored.length + ' records from this backup? ' +
+        'This will REPLACE all current TinyLedger records on this browser. ' +
+        'Download a backup of current records first if you need to keep them.'
+      )) {
+        $('backupStatus').textContent = 'Restore cancelled.';
+        return;
+      }
+
+      /* Save first; do not replace current data if storage fails. */
+      localStorage.setItem(
+        'tinyledger_records',
+        JSON.stringify(restored)
+      );
+
+      data = restored;
+      render();
+
+      $('backupStatus').textContent =
+        'Restore successful: ' + restored.length +
+        ' records recovered. Check your dashboard and transactions.';
+
+      alert('Backup restored successfully.');
+    } catch (error) {
+      $('backupStatus').textContent =
+        'Restore failed: ' + error.message +
+        ' Your current records have not been intentionally replaced.';
+      alert('Could not restore backup: ' + error.message);
+    } finally {
+      event.target.value = '';
+    }
+  };
+
+  reader.onerror = function () {
+    $('backupStatus').textContent =
+      'The selected file could not be read. Try another copy.';
+    event.target.value = '';
+  };
+
+  reader.readAsText(file);
+}
 render();
 </script>
 
