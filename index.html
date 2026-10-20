@@ -855,6 +855,11 @@ a.download='tinyledger-records.csv';
 a.click();
 URL.revokeObjectURL(a.href);
 }
+  
+$('recordSearch').addEventListener('input', render);
+$('recordType').addEventListener('change', render);
+$('dateFrom').addEventListener('change', render);
+$('dateTo').addEventListener('change', render);
 render();
 </script>
 
