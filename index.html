@@ -452,6 +452,58 @@ button:focus-visible {
     line-height: 1;
   }
 }
+  
+/* Transaction search and date filters */
+.filter-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+#recordSearch {
+  margin-bottom: 8px;
+}
+
+#summaryCount {
+  color: #2458a6;
+}
+
+#summarySales {
+  color: #13845b;
+}
+
+#summaryExpenses {
+  color: #c77a20;
+}
+
+#summaryDebts {
+  color: #8b5cc7;
+}
+
+#recordCountNote {
+  margin-top: 13px;
+}
+
+@media (max-width: 600px) {
+  .filter-grid {
+    grid-template-columns: 1fr;
+    gap: 5px;
+  }
+
+  #records .stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  #records .stats .card {
+    min-width: 0;
+    padding: 14px 11px;
+  }
+
+  #records .value {
+    font-size: 20px;
+  }
+}
 </style>
 </head>
 <body>
