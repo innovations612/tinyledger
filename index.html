@@ -577,5 +577,31 @@ URL.revokeObjectURL(a.href);
 }
 render();
 </script>
+
+<nav class="mobile-bottom-nav" aria-label="Mobile navigation">
+  <button type="button" onclick="show('overview')"
+          aria-label="Overview">
+    <span class="bottom-icon">⌂</span>
+    <span>Home</span>
+  </button>
+
+  <button type="button" onclick="show('records')"
+          aria-label="Transactions">
+    <span class="bottom-icon">▤</span>
+    <span>Records</span>
+  </button>
+
+  <button type="button" class="bottom-add"
+          onclick="show('add')" aria-label="Add record">
+    <span class="bottom-plus">+</span>
+    <span>Add</span>
+  </button>
+
+  <button type="button" onclick="show('tools')"
+          aria-label="Calculators">
+    <span class="bottom-icon">％</span>
+    <span>Tools</span>
+  </button>
+</nav>
 </body>
                     </html>
