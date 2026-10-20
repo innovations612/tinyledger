@@ -1,0 +1,226 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TinyLedger - Business Records</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#f4f6fa;color:#172334;font:16px Arial,sans-serif}
+header{background:#142c4b;color:white;padding:22px}
+header h1{margin:0}
+header p{margin-bottom:0;color:#dce7f7}
+main{max-width:950px;margin:auto;padding:16px}
+nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+button{cursor:pointer;border:0;border-radius:7px;padding:11px;background:#2458a6;color:white;font-weight:bold}
+nav button{background:white;color:#142c4b;border:1px solid #ddd}
+.card{background:white;padding:17px;border-radius:12px;margin-bottom:14px;box-shadow:0 2px 8px #142c4b0d}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.value{font-size:24px;font-weight:bold;margin-top:8px}
+label{display:block;font-weight:bold;margin-top:12px}
+input,select{width:100%;padding:12px;margin-top:5px;border:1px solid #ccd4df;border-radius:7px;font-size:16px}
+table{width:100%;border-collapse:collapse}
+th,td{text-align:left;padding:9px;border-bottom:1px solid #ddd}
+.tablewrap{overflow-x:auto}
+section{margin-bottom:20px}
+.hidden{display:none}
+.small{color:#69778a;font-size:13px}
+@media(min-width:650px){.stats{grid-template-columns:repeat(4,1fr)}}
+</style>
+</head>
+<body>
+<header>
+<h1>TL TinyLedger</h1>
+<p>Small business, clear numbers.</p>
+</header>
+<main>
+<div class="card">
+<h2>Your business, clearly recorded.</h2>
+<p>Track sales, expenses and customer debts in one simple place.</p>
+</div>
+
+<nav>
+<button onclick="show('overview')">Overview</button>
+<button onclick="show('records')">Transactions</button>
+<button onclick="show('add')">+ Add Record</button>
+<button onclick="show('tools')">Calculators</button>
+</nav>
+
+<section id="overview">
+<h2>Business overview</h2>
+<div class="stats">
+<div class="card">Sales<div class="value" id="sales">$0.00</div></div>
+<div class="card">Expenses<div class="value" id="expenses">$0.00</div></div>
+<div class="card">Estimated profit<div class="value" id="profit">$0.00</div></div>
+<div class="card">Customers owe<div class="value" id="owed">$0.00</div></div>
+</div>
+<div class="card">
+<h3>Recent activity</h3>
+<div id="recent">No records yet.</div>
+</div>
+<p class="small">Demo version: records are stored in this browser on this device.</p>
+</section>
+
+<section id="add" class="hidden">
+<div class="card">
+<h2>Add a business record</h2>
+<form id="entry">
+<label>Record type</label>
+<select id="type">
+<option value="sale">Sale / Income</option>
+<option value="expense">Expense</option>
+<option value="debt">Customer debt</option>
+</select>
+<label>Date</label>
+<input id="date" type="date" required>
+<label>Amount (USD)</label>
+<input id="amount" type="number" min="0.01" step="0.01" required>
+<label>Customer name (if applicable)</label>
+<input id="person" placeholder="Customer name">
+<label>Description</label>
+<input id="note" required placeholder="e.g. Daily sales">
+<br><br>
+<button type="submit">Save record</button>
+</form>
+</div>
+</section>
+
+<section id="records" class="hidden">
+<div class="card">
+<h2>All transactions</h2>
+<div class="tablewrap">
+<table>
+<thead><tr><th>Date</th><th>Type</th><th>Description</th><th>Amount</th><th>Action</th></tr></thead>
+<tbody id="rows"></tbody>
+</table>
+</div>
+<br>
+<button onclick="exportCSV()">Export records to CSV</button>
+</div>
+</section>
+
+<section id="tools" class="hidden">
+<div class="card">
+<h2>Profit calculator</h2>
+<label>Selling price</label>
+<input id="selling" type="number" value="100" min="0">
+<label>Total cost</label>
+<input id="cost" type="number" value="65" min="0">
+<br><br>
+<button onclick="calculate()">Calculate profit</button>
+<h3 id="answer">Profit: $35.00</h3>
+<p id="margin">Profit margin: 35%</p>
+</div>
+<div class="card">
+<h2>Discount calculator</h2>
+<label>Original price</label>
+<input id="original" type="number" value="100" min="0">
+<label>Discount (%)</label>
+<input id="discount" type="number" value="10" min="0" max="100">
+<br><br>
+<button onclick="discountCalc()">Calculate discount</button>
+<h3 id="discountAnswer">New price: $90.00</h3>
+</div>
+</section>
+
+<footer class="small">
+TinyLedger — Simple tools for small businesses.
+<br><br>Keep backups of your records.
+</footer>
+</main>
+
+<script>
+const $=id=>document.getElementById(id);
+let data=[];
+try{data=JSON.parse(localStorage.getItem('tinyledger_records')||'[]')}catch(e){data=[]}
+if(!Array.isArray(data))data=[];
+$('date').value=new Date().toISOString().slice(0,10);
+
+function show(id){
+document.querySelectorAll('main section').forEach(s=>s.classList.add('hidden'));
+$(id).classList.remove('hidden');
+if(id==='records')render();
+window.scrollTo(0,0);
+}
+function money(n){
+return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(n||0);
+}
+function save(){
+try{localStorage.setItem('tinyledger_records',JSON.stringify(data))}
+catch(e){alert('Storage unavailable. Export your records if possible.')}
+}
+function render(){
+let sales=data.filter(x=>x.type==='sale').reduce((a,x)=>a+x.amount,0);
+let expenses=data.filter(x=>x.type==='expense').reduce((a,x)=>a+x.amount,0);
+let owed=data.filter(x=>x.type==='debt'&&!x.paid).reduce((a,x)=>a+x.amount,0);
+$('sales').textContent=money(sales);
+$('expenses').textContent=money(expenses);
+$('profit').textContent=money(sales-expenses);
+$('owed').textContent=money(owed);
+let recent=[...data].reverse().slice(0,5);
+$('recent').innerHTML=recent.length?recent.map(x=>
+'<p>'+safe(x.date)+' — '+safe(x.note)+' — '+money(x.amount)+'</p>'
+).join(''):'No records yet.';
+$('rows').innerHTML=[...data].reverse().map(x=>
+'<tr><td>'+safe(x.date)+'</td><td>'+safe(x.type)+'</td><td>'+safe(x.note)+(x.person?' ('+safe(x.person)+')':'')+'</td><td>'+money(x.amount)+(x.type==='debt'?(x.paid?' (Paid)':' (Unpaid)'):'')+'</td><td>'+(x.type==='debt'&&!x.paid?'<button onclick="markPaid('+x.id+')">Paid</button> ':'')+'<button onclick="removeRecord('+x.id+')">Delete</button></td></tr>'
+).join('');
+}
+function safe(s){
+return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+$('entry').addEventListener('submit',function(e){
+e.preventDefault();
+let amount=Number($('amount').value);
+if(!Number.isFinite(amount)||amount<=0)return alert('Enter a valid amount.');
+data.push({
+id:Date.now(),
+type:$('type').value,
+date:$('date').value,
+amount:amount,
+person:$('person').value.trim(),
+note:$('note').value.trim(),
+paid:false
+});
+save();
+render();
+this.reset();
+$('date').value=new Date().toISOString().slice(0,10);
+show('overview');
+});
+function removeRecord(id){
+if(confirm('Delete this record?')){
+data=data.filter(x=>x.id!==id);
+save();render();
+}
+}
+function markPaid(id){
+let x=data.find(x=>x.id===id);
+if(x){x.paid=true;save();render();}
+}
+function calculate(){
+let s=Number($('selling').value)||0;
+let c=Number($('cost').value)||0;
+$('answer').textContent='Profit: '+money(s-c);
+$('margin').textContent='Profit margin: '+(s?(s-c)/s*100:0).toFixed(1)+'%';
+}
+function discountCalc(){
+let p=Number($('original').value)||0;
+let d=Math.min(100,Math.max(0,Number($('discount').value)||0));
+$('discountAnswer').textContent='New price: '+money(p*(1-d/100));
+}
+function exportCSV(){
+if(!data.length)return alert('There are no records to export.');
+let csv='Date,Type,Description,Customer,Amount,Paid\n'+data.map(x=>
+[x.date,x.type,x.note,x.person,x.amount,x.paid?'Yes':'No'].map(v=>'"'+String(v||'').replace(/"/g,'""')+'"').join(',')
+).join('\n');
+let a=document.createElement('a');
+a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+a.download='tinyledger-records.csv';
+a.click();
+URL.revokeObjectURL(a.href);
+}
+render();
+</script>
+</body>
+                    </html>
