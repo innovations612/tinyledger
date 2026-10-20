@@ -315,6 +315,73 @@ button:focus-visible {
     transition: none !important;
   }
 }
+  
+/* Premium TinyLedger dashboard */
+#overview > h2 {
+  margin-bottom: 18px;
+}
+
+#overview .stats {
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+#overview .stats .card {
+  position: relative;
+  min-height: 112px;
+  border-radius: 16px;
+  border-top: 3px solid #2458a6;
+}
+
+#overview .stats .card:nth-child(1) {
+  border-top-color: #2458a6;
+}
+
+#overview .stats .card:nth-child(2) {
+  border-top-color: #c77a20;
+}
+
+#overview .stats .card:nth-child(3) {
+  border-top-color: #13845b;
+}
+
+#overview .stats .card:nth-child(4) {
+  border-top-color: #8b5cc7;
+}
+
+#overview > .card {
+  margin-top: 18px;
+}
+
+#overview #recent p {
+  padding: 12px 0;
+  margin: 0;
+  border-bottom: 1px solid #e5eaf2;
+  overflow-wrap: anywhere;
+}
+
+#overview #recent p:last-child {
+  border-bottom: 0;
+}
+
+/* Add comfortable room above mobile navigation */
+@media (max-width: 600px) {
+  main {
+    padding-bottom: 105px;
+  }
+
+  #overview .stats {
+    gap: 10px;
+  }
+
+  #overview .stats .card {
+    min-height: 105px;
+  }
+
+  #overview .value {
+    font-size: clamp(19px, 5vw, 24px);
+  }
+}
 </style>
 </head>
 <body>
