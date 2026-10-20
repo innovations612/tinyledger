@@ -695,21 +695,111 @@ function save(){
 try{localStorage.setItem('tinyledger_records',JSON.stringify(data))}
 catch(e){alert('Storage unavailable. Export your records if possible.')}
 }
-function render(){
-let sales=data.filter(x=>x.type==='sale').reduce((a,x)=>a+x.amount,0);
-let expenses=data.filter(x=>x.type==='expense').reduce((a,x)=>a+x.amount,0);
-let owed=data.filter(x=>x.type==='debt'&&!x.paid).reduce((a,x)=>a+x.amount,0);
-$('sales').textContent=money(sales);
-$('expenses').textContent=money(expenses);
-$('profit').textContent=money(sales-expenses);
-$('owed').textContent=money(owed);
-let recent=[...data].reverse().slice(0,5);
-$('recent').innerHTML=recent.length?recent.map(x=>
-'<p>'+safe(x.date)+' — '+safe(x.note)+' — '+money(x.amount)+'</p>'
-).join(''):'No records yet.';
-$('rows').innerHTML=[...data].reverse().map(x=>
-'<tr><td>'+safe(x.date)+'</td><td>'+safe(x.type)+'</td><td>'+safe(x.note)+(x.person?' ('+safe(x.person)+')':'')+'</td><td>'+money(x.amount)+(x.type==='debt'?(x.paid?' (Paid)':' (Unpaid)'):'')+'</td><td>'+(x.type==='debt'&&!x.paid?'<button onclick="markPaid('+x.id+')">Paid</button> ':'')+'<button onclick="removeRecord('+x.id+')">Delete</button></td></tr>'
-).join('');
+
+function getFilteredRecords() {
+  const search = (
+    document.getElementById('recordSearch')?.value || ''
+  ).trim().toLowerCase();
+
+  const type = document.getElementById('recordType')?.value || 'all';
+  const from = document.getElementById('dateFrom')?.value || '';
+  const to = document.getElementById('dateTo')?.value || '';
+
+  return data.filter(x => {
+    const searchable = (
+      String(x.note || '') + ' ' + String(x.person || '')
+    ).toLowerCase();
+
+    if (search && !searchable.includes(search)) return false;
+    if (type !== 'all' && x.type !== type) return false;
+    if (from && x.date < from) return false;
+    if (to && x.date > to) return false;
+
+    return true;
+  });
+}
+
+function render() {
+  const sales = data
+    .filter(x => x.type === 'sale')
+    .reduce((a, x) => a + x.amount, 0);
+
+  const expenses = data
+    .filter(x => x.type === 'expense')
+    .reduce((a, x) => a + x.amount, 0);
+
+  const owed = data
+    .filter(x => x.type === 'debt' && !x.paid)
+    .reduce((a, x) => a + x.amount, 0);
+
+  $('sales').textContent = money(sales);
+  $('expenses').textContent = money(expenses);
+  $('profit').textContent = money(sales - expenses);
+  $('owed').textContent = money(owed);
+
+  const recent = [...data].reverse().slice(0, 5);
+
+  $('recent').innerHTML = recent.length
+    ? recent.map(x =>
+        '<p>' + safe(x.date) + ' — ' + safe(x.note) +
+        ' — ' + money(x.amount) + '</p>'
+      ).join('')
+    : 'No records yet.';
+
+  const filtered = getFilteredRecords();
+
+  const totalSales = filtered
+    .filter(x => x.type === 'sale')
+    .reduce((a, x) => a + x.amount, 0);
+
+  const totalExpenses = filtered
+    .filter(x => x.type === 'expense')
+    .reduce((a, x) => a + x.amount, 0);
+
+  const totalDebts = filtered
+    .filter(x => x.type === 'debt' && !x.paid)
+    .reduce((a, x) => a + x.amount, 0);
+
+  $('summaryCount').textContent = filtered.length;
+  $('summarySales').textContent = money(totalSales);
+  $('summaryExpenses').textContent = money(totalExpenses);
+  $('summaryDebts').textContent = money(totalDebts);
+
+  $('recordCountNote').textContent =
+    'Showing ' + filtered.length + ' of ' +
+    data.length + ' records. CSV export includes all records.';
+
+  $('rows').innerHTML = [...filtered].reverse().map(x =>
+    '<tr>' +
+      '<td>' + safe(x.date) + '</td>' +
+      '<td>' + safe(x.type) + '</td>' +
+      '<td>' + safe(x.note) +
+        (x.person ? ' (' + safe(x.person) + ')' : '') +
+      '</td>' +
+      '<td>' + money(x.amount) +
+        (x.type === 'debt' ? (x.paid ? ' (Paid)' : ' (Unpaid)') : '') +
+      '</td>' +
+      '<td>' +
+        (x.type === 'debt' && !x.paid
+          ? '<button onclick="markPaid(' + x.id + ')">Paid</button> '
+          : '') +
+        '<button onclick="removeRecord(' + x.id + ')">Delete</button>' +
+      '</td>' +
+    '</tr>'
+  ).join('');
+
+  if (!filtered.length) {
+    $('rows').innerHTML =
+      '<tr><td colspan="5">No matching transactions found.</td></tr>';
+  }
+}
+
+function clearRecordFilters() {
+  $('recordSearch').value = '';
+  $('recordType').value = 'all';
+  $('dateFrom').value = '';
+  $('dateTo').value = '';
+  render();
 }
 function safe(s){
 return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
