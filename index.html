@@ -536,6 +536,36 @@ button:focus-visible {
 <h3>Recent activity</h3>
 <div id="recent">No records yet.</div>
 </div>
+  
+<div class="card" id="backup-panel">
+  <h3>Backup &amp; Restore</h3>
+  <p class="small">
+    Keep a safe copy of your business records. Restore a backup
+    when you need to recover records or move to another device.
+  </p>
+
+  <button type="button" onclick="downloadBackup()">
+    Download Backup
+  </button>
+
+  <button type="button"
+          onclick="document.getElementById('backupFile').click()">
+    Restore Backup
+  </button>
+
+  <input
+    id="backupFile"
+    type="file"
+    accept=".json,application/json"
+    style="display:none"
+    onchange="restoreBackup(event)"
+  >
+
+  <p class="small" id="backupStatus" role="status"
+     aria-live="polite">
+    Last backup status: no backup recorded in this session.
+  </p>
+</div>
 <p class="small">Demo version: records are stored in this browser on this device.</p>
 </section>
 
